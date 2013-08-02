@@ -1,4 +1,4 @@
-dichotomize <- function(Mset, T, N, index.T, index.N, filter=c("none", "noncg", "sex", "snp", "rpt", "all", "custom"))
+dichotomize <- function(Mset, T, N, index.T, index.N, filter=c("none", "noncg", "sex", "snp", "rpt", "all", "custom"), custom.filter)
 {
 	if(!missing(Mset) && is(Mset, "MethylumiSet")){
 		if(!missing(T) && !missing(N)) warning("Both MethyLumiSet and Tumor-Normal beta value matrices are provided. Using methyLumiSet for processing \n")
@@ -16,11 +16,16 @@ dichotomize <- function(Mset, T, N, index.T, index.N, filter=c("none", "noncg", 
 	}
 
 	if(!any(grepl("^cg", rownames(beta)))) stop("Probe names are not standard Illumina 450k probe names \n")
-
-	filter <- match.arg(filter, several.ok=TRUE)
+	
+	if(missing(filter)) {
+		filter <- "all"
+	} else {
+		filter <- match.arg(filter, several.ok=TRUE)
+	}
+	
 	if(!(all(filter %in% c("none", "noncg", "sex", "snp", "rpt", "all", "custom")))) stop("Please provide a valid filter. See '?applyFilters' for valid filters \n")
 	
-	beta.filtered <- applyFilters(beta, filter)
+	beta.filtered <- applyFilters(beta, filter, custom.filter = custom.filter)
 	beta.filtered <- na.omit(beta.filtered)
 	gc()
 	betaT.raw <- beta.filtered[, index.T, drop=FALSE]
@@ -34,8 +39,8 @@ dichotomize <- function(Mset, T, N, index.T, index.N, filter=c("none", "noncg", 
 	storage.mode(betaN.dichotomized) <- "numeric"
 
 	retval <- SimpleList()
-	retval$TUMOR <- SimpleList("Beta.Raw" = betaT.raw, "Beta.Dichotomized" = betaT.dichotomized)
-	retval$NORMAL <- SimpleList("Beta.Raw" = betaN.raw, "Beta.Dichotomized" = betaN.dichotomized)
+	retval$RAW <- SimpleList("Tumor.Raw" = betaT.raw, "Normal.Raw" = betaN.raw)
+	retval$DICHOTOMIZED <- SimpleList("Tumor.Dichotomized" = betaT.dichotomized, "Normal.Dichotomized" = betaN.dichotomized)
 
 	gc()
 

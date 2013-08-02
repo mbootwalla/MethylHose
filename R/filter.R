@@ -1,4 +1,4 @@
-applyFilters <- function(x, filter="all")
+applyFilters <- function(x, filter="all", custom.filter)
 {
 	if(missing(x) || !is(x, "matrix")) stop("Please provide a valid matrix as input \n")
 	if(!any(grepl("^cg", rownames(x)))) stop("Probe names for the beta values matrix are not standard Illumina 450k probe names \n")
@@ -20,10 +20,13 @@ applyFilters <- function(x, filter="all")
 	}
 
 	if("custom" %in% filter){
-		if(!is(filter, "character")) stop("Custom filter should be a chracter vector containing probe names that are to be filtered out \n")
-		if(!any(grepl("^cg", filter))) stop("Custom filter contains non-standard Illumina 450k probe names \n")
+		if(missing(custom.filter)) stop("Please provide a custom filter\n")
+		if(!is(custom.filter, "character")) stop("Custom filter should be a chracter vector containing probe names that are to be filtered out \n")
+		if(!any(grepl("^cg", custom.filter)) && !any(grepl("^rs", custom.filter)) && !any(grepl("^ch", custom.filter))) {
+			stop("Custom filter contains non-standard Illumina 450k probe names \n")
+		}
 		message("Applying provided custom filter \n\n")
-		x <- x[-which(rownames(x) %in% filter), , drop=FALSE]
+		x <- x[-which(rownames(x) %in% custom.filter), , drop=FALSE]
 		return(x)
 	}
 
@@ -36,7 +39,18 @@ applyFilters <- function(x, filter="all")
 		return(x)
 	}
 }
-	
 
-	
-	
+percentMFilter <- function(x, percent = 10)
+{
+	if(!is(x, "SimpleList")){
+		stop("Data should be a SimpleList object \n")
+	}
+	message(paste("Retaining probes methylated in", percent, "percent of Tumor samples\n", sep=" "))
+	datT <- x$DICHOTOMIZED$Tumor.Dichotomized
+	#datN <- x$DICHOTOMIZED$Normal.Dichotomized
+	datT.percentM <- datT[which(((rowSums(datT)/ncol(datT))*100) > percent),]
+	#keep.probes.T <- match(rownames(datT.percentM), rownames(datT))
+	#keep.probes.N <- match(rownames(datT.percentM), rownames(datN))
+	x$FILTERED <- SimpleList("Tumor.Filtered" = datT.percentM)
+	return(x)
+}

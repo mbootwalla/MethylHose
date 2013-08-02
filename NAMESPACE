@@ -1,4 +1,4 @@
-import(methylumi)
 import(methods)
+import(IRanges)
 
 exportPattern("^[^\\.]")
